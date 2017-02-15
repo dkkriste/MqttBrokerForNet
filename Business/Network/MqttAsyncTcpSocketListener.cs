@@ -1,4 +1,8 @@
-﻿namespace MqttBrokerForNet.Business.Network
+﻿using System.Net;
+using Microsoft.Extensions.Options;
+using MqttBrokerForNet.Domain.Entities.Configuration;
+
+namespace MqttBrokerForNet.Business.Network
 {
     using System.Collections.Concurrent;
     using System.Net.Sockets;
@@ -30,20 +34,22 @@
         public MqttAsyncTcpSocketListener(
             IMqttLoadbalancingManager loadbalancingManager,
             IMqttConnectionPoolManager connectionManager,
-            MqttOptions options)
+            IOptions<MqttNetworkOptions> networkOptions)
         {
             this.loadbalancingManager = loadbalancingManager;
             this.connectionManager = connectionManager;
             poolOfAcceptEventArgs = new ConcurrentStack<SocketAsyncEventArgs>();
 
-            for (var i = 0; i < options.NumberOfAcceptSaea; i++)
+            for (var i = 0; i < networkOptions.Value.NumberOfAcceptSaea; i++)
             {
                 poolOfAcceptEventArgs.Push(CreateNewSaeaForAccept());
             }
 
+            var endpoint = new IPEndPoint(IPAddress.Any, networkOptions.Value.Port);
+
             // create the socket which listens for incoming connections
-            listenSocket = new Socket(options.EndPoint.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
-            listenSocket.Bind(options.EndPoint);
+            listenSocket = new Socket(endpoint.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
+            listenSocket.Bind(endpoint);
         }
 
         #endregion

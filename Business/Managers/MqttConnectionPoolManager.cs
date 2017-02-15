@@ -1,4 +1,7 @@
-﻿namespace MqttBrokerForNet.Business.Managers
+﻿using Microsoft.Extensions.Options;
+using MqttBrokerForNet.Domain.Entities.Configuration;
+
+namespace MqttBrokerForNet.Business.Managers
 {
     using System;
     using System.Collections.Concurrent;
@@ -26,15 +29,15 @@
 
         #region Constructors and Destructors
 
-        public MqttConnectionPoolManager(IMqttConnectionFactory connectionFactory, IMqttTcpReceiver receiver, ILogginHandler logginHandler, MqttOptions options)
+        public MqttConnectionPoolManager(IMqttConnectionFactory connectionFactory, IMqttTcpReceiver receiver, ILogginHandler logginHandler, IOptions<MqttNetworkOptions> networkOptions)
         {
             this.logginHandler = logginHandler;
             numberOfConnectionsGotten = 0;
             numberOfConnectionsReturned = 0;
 
             unconnectedClientPool = new ConcurrentStack<MqttConnection>();
-            var connections = connectionFactory.Create(options.MaxConnections, options.ReadAndSendBufferSize);
-            for (var i = 0; i < options.MaxConnections; i++)
+            var connections = connectionFactory.Create(networkOptions.Value.MaxConnections, networkOptions.Value.ReadAndSendBufferSize);
+            for (var i = 0; i < networkOptions.Value.MaxConnections; i++)
             {
                 connections[i].ReceiveSocketAsyncEventArgs.Completed += receiver.ReceiveCompleted;
                 unconnectedClientPool.Push(connections[i]);

@@ -1,19 +1,15 @@
-﻿namespace MqttBrokerForNet.Domain.Entities
-{
-    using System.Net;
+﻿using System.Net;
 
-    public class MqttOptions
+namespace MqttBrokerForNet.Domain.Entities.Configuration
+{
+    public class MqttNetworkOptions
     {
         public int NumberOfAcceptSaea { get; set; }
 
         public int MaxConnections { get; set; }
 
-        public int ConnectionsPrProcessingManager { get; set; }
-
-        public IPEndPoint EndPoint { get; set; }
-
-        public int InitialNumberOfRawMessages { get; set; }
-
+        public int Port { get; set; }
+        
         public int IndividualMessageBufferSize { get; set; }
 
         public int NumberOfSendBuffers { get; set; }

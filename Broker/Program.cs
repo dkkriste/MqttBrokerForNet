@@ -1,4 +1,12 @@
-﻿namespace MqttBrokerForNet.Broker
+﻿using System.IO;
+using Microsoft.Extensions.Configuration;
+using MqttBrokerForNet.Business.Managers;
+using MqttBrokerForNet.Business.Workers;
+using MqttBrokerForNet.Domain.Contracts.Managers;
+using MqttBrokerForNet.Domain.Contracts.Workers;
+using MqttBrokerForNet.Domain.Entities.Configuration;
+
+namespace MqttBrokerForNet.Broker
 {
     using System;
 
@@ -13,45 +21,68 @@
 
     public class Program
     {
+        private static IConfigurationRoot Configuration { get; set; }
+
         public static void Main(string[] args)
         {
-            Console.WriteLine("Hello World!");
-
+            var builder = new ConfigurationBuilder()
+                .SetBasePath(Directory.GetCurrentDirectory())
+                .AddJsonFile("mqttsettings.json");
+            Configuration = builder.Build();
+            
             IServiceCollection serviceCollection = new ServiceCollection();
             ConfigureServices(serviceCollection);
-            //Application application = new Application(serviceCollection);
-            // Run
-            // ...
+            
         }
-
 
         private static void ConfigureServices(IServiceCollection serviceCollection)
         {
-            // Factories
+            serviceCollection.AddOptions();
+
+            serviceCollection.Configure<MqttNetworkOptions>(Configuration.GetSection("mqttNetworkOptions"));
+            serviceCollection.Configure<MqttBrokerOptions>(Configuration.GetSection("mqttBrokerOptions"));
+
+            // Factories - Singleton
             serviceCollection.AddSingleton<IMqttConnectionFactory, MqttConnectionFactory>();
             serviceCollection.AddSingleton<IMqttMessageFactory, MqttMessageFactory>();
             serviceCollection.AddSingleton<IMqttRawMessageFactory, MqttRawMessageFactory>();
             serviceCollection.AddSingleton<ISocketAsyncEventArgsFactory, SocketAsyncEventArgsFactory>();
 
-            // Handlers
+            // Handlers - Singleton
             serviceCollection.AddSingleton<ILogginHandler, ConsoleLogginHandler>();
             serviceCollection.AddSingleton<IMqttConnectionInflightHandler, MqttConnectionInflightHandler>();
             serviceCollection.AddSingleton<IMqttConnectionInternalEventHandler, MqttConnectionInternalEventHandler>();
             serviceCollection.AddSingleton<IMqttIncommingMessageHandler, MqttIncommingMessageHandler>();
             serviceCollection.AddSingleton<IMqttOutgoingMessageHandler, MqttOutgoingMessageHandler>();
 
-            // Managers
-            serviceCollection.AddTransient<ILogginHandler, ConsoleLogginHandler>(); // HER ER JEG NÅ
+            // Handlers - Transient
+            serviceCollection.AddTransient<ILogginHandler, ConsoleLogginHandler>();
 
-            // Network
+            // Managers - Singleton
+            serviceCollection.AddSingleton<IMqttConnectionPoolManager, MqttConnectionPoolManager>();
+            serviceCollection.AddSingleton<IMqttLoadbalancingManager, MqttLoadbalancingManager>();
+            serviceCollection.AddSingleton<IMqttRetainedMessageManager, MqttRetainedMessageManager>();
+            serviceCollection.AddSingleton<IMqttSubscriptionManager, MqttSubscriptionManager>();
+
+            // Managers - Singleton
+            serviceCollection.AddTransient<IMqttConnectionManager, MqttConnectionManager>();
+            serviceCollection.AddTransient<IMqttPublishingManager, MqttPublishingManager>();
+            serviceCollection.AddTransient<IMqttSecurityManager, MqttSecurityManager>();
+            serviceCollection.AddTransient<IMqttSessionManager, MqttSessionManager>();
+
+            // Network - Singleton
             serviceCollection.AddSingleton<IMqttAsyncTcpSender, MqttAsyncTcpSender>();
             serviceCollection.AddSingleton<IMqttAsyncTcpSocketListener, MqttAsyncTcpSocketListener>();
             serviceCollection.AddSingleton<IMqttTcpReceiver, MqttTcpReceiver>();
 
-            // Workers
+            // Workers - Singleton
+            serviceCollection.AddSingleton<IMqttRetainedMessageWorker, MqttRetainedMessageWorker>();
 
-            //ILoggerFactory loggerFactory = new Logging.LoggerFactory();
-            //serviceCollection.AddInstance<ILoggerFactory>(loggerFactory);
+            // Workers - Transient
+            serviceCollection.AddTransient<IMqttConnectionWorker, MqttConnectionWorker>();
+            serviceCollection.AddTransient<IMqttKeepAliveWorker, MqttKeepAliveWorker>();
+            serviceCollection.AddTransient<IMqttLoadbalancingWorker, MqttLoadbalancingWorker>();
+            serviceCollection.AddTransient<IMqttPublishingWorker, MqttPublishingWorker>();
         }
     }
 }

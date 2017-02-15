@@ -15,6 +15,9 @@ Contributors:
    David Kristensen - optimalization for the azure platform
 */
 
+using Microsoft.Extensions.Options;
+using MqttBrokerForNet.Domain.Entities.Configuration;
+
 namespace MqttBrokerForNet.Business
 {
     using System.Collections.Concurrent;
@@ -54,14 +57,14 @@ namespace MqttBrokerForNet.Business
 
         #region Constructors and Destructors
 
-        public MqttBroker(ILogginHandler logginHandler, MqttOptions options)
+        public MqttBroker(ILogginHandler logginHandler, IOptions<MqttBrokerOptions> options)
         {
-            //MqttAsyncTcpSender.Init(options);
+            //MqttAsyncTcpSender.Init(networkOptions);
 
             this.logginHandler = logginHandler;
             securityManager = new MqttSecurityManager();
 
-            var numberOfProcessingManagersNeeded = options.MaxConnections / options.ConnectionsPrProcessingManager;
+            var numberOfProcessingManagersNeeded = options.Value.NumberOfConnectionWorkers;
             connectionWorkers = new MqttConnectionWorker[numberOfProcessingManagersNeeded];
             for (var i = 0; i < connectionWorkers.Length; i++)
             {
@@ -77,7 +80,7 @@ namespace MqttBrokerForNet.Business
             //socketListener = new MqttAsyncTcpSocketListener(
             //    loadbalancingManager,
             //    connectionPoolManager,
-            //    options);
+            //    networkOptions);
         }
 
         #endregion

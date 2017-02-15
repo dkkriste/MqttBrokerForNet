@@ -1,0 +1,14 @@
+{
+  "mqttNetworkOptions": {
+    "numberOfAcceptSaea": 100,
+    "maxConnections": 256,
+    "port": 1883,
+    "individualMessageBufferSize": 512,
+    "numberOfSendBuffers": 32,
+    "readAndSendBufferSize":  512 
+  },
+  "mqttBrokerOptions": {
+    "NumberOfConnectionWorkers": 1,
+    "initialNumberOfRawMessages":  100
+  }
+}
