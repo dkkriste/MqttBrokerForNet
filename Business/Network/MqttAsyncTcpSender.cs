@@ -6,6 +6,8 @@ namespace MqttBrokerForNet.Business.Network
     using System.Collections.Concurrent;
     using System.Net.Sockets;
 
+    using Microsoft.Extensions.Options;
+
     using MqttBrokerForNet.Domain.Contracts.Network;
     using MqttBrokerForNet.Domain.Entities;
 
@@ -23,7 +25,7 @@ namespace MqttBrokerForNet.Business.Network
 
         #region Public Methods and Operators
 
-        public MqttAsyncTcpSender(MqttNetworkOptions networkOptions)
+        public MqttAsyncTcpSender(IOptions<MqttNetworkOptions> networkOptions)
         {
             if (isInitialized)
             {
@@ -31,10 +33,10 @@ namespace MqttBrokerForNet.Business.Network
             }
 
             isInitialized = true;
-            sendBufferManager = new BufferManager(networkOptions.NumberOfSendBuffers, networkOptions.ReadAndSendBufferSize);
+            sendBufferManager = new BufferManager(networkOptions.Value.NumberOfSendBuffers, networkOptions.Value.ReadAndSendBufferSize);
             sendBufferEventArgsPool = new ConcurrentStack<SocketAsyncEventArgs>();
 
-            for (var i = 0; i < networkOptions.NumberOfSendBuffers; i++)
+            for (var i = 0; i < networkOptions.Value.NumberOfSendBuffers; i++)
             {
                 var args = CreateAndSetNewSendArgs();
                 sendBufferEventArgsPool.Push(args);

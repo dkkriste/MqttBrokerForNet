@@ -15,17 +15,14 @@ Contributors:
    David Kristensen - optimalization for the azure platform
 */
 
-using Microsoft.Extensions.Options;
-using MqttBrokerForNet.Domain.Entities.Configuration;
-
 namespace MqttBrokerForNet.Business
 {
+    using System;
     using System.Collections.Concurrent;
     using System.Collections.Generic;
 
-    using MqttBrokerForNet.Business.Managers;
-    using MqttBrokerForNet.Business.Utility;
-    using MqttBrokerForNet.Business.Workers;
+    using Microsoft.Extensions.DependencyInjection;
+
     using MqttBrokerForNet.Domain.Contracts.Handlers;
     using MqttBrokerForNet.Domain.Contracts.Managers;
     using MqttBrokerForNet.Domain.Contracts.Network;
@@ -33,7 +30,7 @@ namespace MqttBrokerForNet.Business
     using MqttBrokerForNet.Domain.Entities;
     using MqttBrokerForNet.Domain.Entities.Delegates;
 
-    public class MqttBroker  
+    public class MqttBroker 
     {
         #region Static Fields
 
@@ -45,11 +42,19 @@ namespace MqttBrokerForNet.Business
 
         #region Fields
 
-        private readonly ILogginHandler logginHandler;
+        private readonly ILogginHandler loggingHandler;
 
-        private readonly IMqttConnectionWorker[] connectionWorkers;
+        private readonly IMqttConnectionWorker connectionWorker;
+
+        private readonly IMqttKeepAliveWorker keepAliveWorker;
+
+        private readonly IMqttLoadbalancingWorker loadbalancingWorker;
 
         private readonly IMqttAsyncTcpSocketListener socketListener;
+
+        private readonly IMqttPublishingWorker publishingWorker;
+
+        private readonly IMqttRetainedMessageWorker retainedMessageWorker;
 
         private readonly IMqttSecurityManager securityManager;
 
@@ -57,30 +62,16 @@ namespace MqttBrokerForNet.Business
 
         #region Constructors and Destructors
 
-        public MqttBroker(ILogginHandler logginHandler, IOptions<MqttBrokerOptions> options)
+        public MqttBroker(IServiceProvider serviceProvider)
         {
-            //MqttAsyncTcpSender.Init(networkOptions);
-
-            this.logginHandler = logginHandler;
-            securityManager = new MqttSecurityManager();
-
-            var numberOfProcessingManagersNeeded = options.Value.NumberOfConnectionWorkers;
-            connectionWorkers = new MqttConnectionWorker[numberOfProcessingManagersNeeded];
-            for (var i = 0; i < connectionWorkers.Length; i++)
-            {
-                //connectionWorkers[i] = new MqttConnectionWorker(
-                //    logginHandler,
-                //    connectionPoolManager,
-                //    securityManager,
-                //    tcpReceiver, null);
-            }
-
-            //loadbalancingManager = new MqttLoadbalancingManager(logginHandler, connectionWorkers);
-
-            //socketListener = new MqttAsyncTcpSocketListener(
-            //    loadbalancingManager,
-            //    connectionPoolManager,
-            //    networkOptions);
+            loggingHandler = serviceProvider.GetService<ILogginHandler>();
+            connectionWorker = serviceProvider.GetService<IMqttConnectionWorker>();
+            loadbalancingWorker = serviceProvider.GetService<IMqttLoadbalancingWorker>();
+            socketListener = serviceProvider.GetService<IMqttAsyncTcpSocketListener>();
+            keepAliveWorker = serviceProvider.GetService<IMqttKeepAliveWorker>();
+            publishingWorker = serviceProvider.GetService<IMqttPublishingWorker>();
+            retainedMessageWorker = serviceProvider.GetService<IMqttRetainedMessageWorker>();
+            securityManager = serviceProvider.GetService<IMqttSecurityManager>();
         }
 
         #endregion
@@ -160,43 +151,24 @@ namespace MqttBrokerForNet.Business
             return AllConnectedClients.TryRemove(clientId, out connection);
         }
 
-        public void PeriodicLogging()
-        {
-            logginHandler.LogMetric(this, LoggerConstants.NumberOfConnectedClients, AllConnectedClients.Count);
-
-            //loadbalancingManager.PeriodicLogging();
-            //connectionPoolManager.PeriodicLogging();
-
-            foreach (var processingManager in connectionWorkers)
-            {
-                //processingManager.PeriodicLogging();
-            }
-        }
-
         public void Start()
         {
+            keepAliveWorker.Start();
+            loadbalancingWorker.Start();
             socketListener.Start();
-            //loadbalancingManager.Start();
-            //MqttRetainedMessageManager.Start();
-            //MqttKeepAliveManager.Start();
-
-            foreach (var processingManager in connectionWorkers)
-            {
-                processingManager.Start();
-            }
+            publishingWorker.Start();
+            retainedMessageWorker.Start();
+            connectionWorker.Start();
         }
 
         public void Stop()
         {
+            keepAliveWorker.Stop();
+            loadbalancingWorker.Stop();
             socketListener.Stop();
-            //loadbalancingManager.Stop();
-            //MqttRetainedMessageManager.Stop();
-            //MqttKeepAliveManager.Stop();
-
-            foreach (var processingManager in connectionWorkers)
-            {
-                processingManager.Stop();
-            }
+            publishingWorker.Stop();
+            retainedMessageWorker.Stop();
+            connectionWorker.Stop();
         }
 
         #endregion

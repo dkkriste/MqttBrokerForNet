@@ -14,7 +14,7 @@
 
         private readonly ILogginHandler logginHandler;
 
-        private readonly IMqttConnectionManager connectionManager;
+        private readonly IMqttConnectionManager[] connectionManagers;
 
         //private int numberOfAssignedClients;
 
@@ -32,10 +32,10 @@
 
         public MqttConnectionWorker(
             ILogginHandler logginHandler,
-            IMqttConnectionManager connectionManager)
+            IMqttConnectionManager[] connectionManagers)
         {
             this.logginHandler = logginHandler;
-            this.connectionManager = connectionManager;
+            this.connectionManagers = connectionManagers;
         }
 
         #endregion
@@ -76,14 +76,17 @@
         public override void Start()
         {
             base.Start();
-            Fx.StartThread(ProcessRawMessageThread);
-            Fx.StartThread(ProcessInflightThread);
-            Fx.StartThread(ProcessInternalEventThread);
+            foreach (var connectionManager in connectionManagers)
+            {
+                Fx.StartThread(() => ProcessRawMessageThread(connectionManager));
+                Fx.StartThread(() => ProcessInflightThread(connectionManager));
+                Fx.StartThread(() => ProcessInternalEventThread(connectionManager));
+            }
         }
 
         #region ProcessingThreads
 
-        private void ProcessRawMessageThread()
+        private void ProcessRawMessageThread(IMqttConnectionManager connectionManager)
         {
             while (this.IsRunning)
             {
@@ -99,7 +102,7 @@
             }
         }
 
-        private void ProcessInflightThread()
+        private void ProcessInflightThread(IMqttConnectionManager connectionManager)
         {
             while (this.IsRunning)
             {
@@ -115,7 +118,7 @@
             }
         }
 
-        private void ProcessInternalEventThread()
+        private void ProcessInternalEventThread(IMqttConnectionManager connectionManager)
         {
             while (this.IsRunning)
             {

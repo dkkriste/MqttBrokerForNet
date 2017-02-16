@@ -8,7 +8,7 @@
     "readAndSendBufferSize":  512 
   },
   "mqttBrokerOptions": {
-    "NumberOfConnectionWorkers": 1,
+    "numberOfConnectionManagers": 2,
     "initialNumberOfRawMessages":  100
   }
 }

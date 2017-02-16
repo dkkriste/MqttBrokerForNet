@@ -17,11 +17,9 @@
 
         private readonly ILogginHandler logginHandler;
 
-        private readonly IMqttConnectionWorker[] workers;
+        private readonly IMqttConnectionManager[] connectionManagers;
 
         private int indexOfProcessingManagerToGetNextConnection;
-
-        private bool isRunning;
 
         private int numberOfConnectionsLoadbalanced;
 
@@ -29,10 +27,10 @@
 
         #region Constructors and Destructors
 
-        public MqttLoadbalancingManager(ILogginHandler logginHandler, IMqttConnectionWorker[] workers)
+        public MqttLoadbalancingManager(ILogginHandler logginHandler, IMqttConnectionManager[] connectionManagers)
         {
             this.logginHandler = logginHandler;
-            this.workers = workers;
+            this.connectionManagers = connectionManagers;
             loadbalanceAwaitHandler = new AutoResetEvent(false);
         }
 
@@ -42,7 +40,7 @@
 
         public void OpenClientConnection(MqttConnection connection)
         {
-            //processingManagers[indexOfProcessingManagerToGetNextConnection].OpenClientConnection(connection);
+            connectionManagers[indexOfProcessingManagerToGetNextConnection].OpenClientConnection(connection);
             loadbalanceAwaitHandler.Set();
             Interlocked.Increment(ref numberOfConnectionsLoadbalanced);
         }
@@ -60,13 +58,13 @@
 
             var loadbalancerWithTheLeastConnections = 0;
             var leastNumberOfConnections = int.MaxValue;
-            for (var i = 0; i < workers.Length; i++)
+            for (var i = 0; i < connectionManagers.Length; i++)
             {
-                //if (workers[i].AssignedClients < leastNumberOfConnections)
-                //{
-                //    leastNumberOfConnections = workers[i].AssignedClients;
-                //    loadbalancerWithTheLeastConnections = i;
-                //}
+                if (connectionManagers[i].AssignedClients < leastNumberOfConnections)
+                {
+                    leastNumberOfConnections = connectionManagers[i].AssignedClients;
+                    loadbalancerWithTheLeastConnections = i;
+                }
             }
 
             indexOfProcessingManagerToGetNextConnection = loadbalancerWithTheLeastConnections;

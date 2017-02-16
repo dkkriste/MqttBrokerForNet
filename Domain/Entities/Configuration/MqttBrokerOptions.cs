@@ -2,7 +2,7 @@
 {
     public class MqttBrokerOptions
     {
-        public int NumberOfConnectionWorkers { get; set; }
+        public int NumberOfConnectionManagers { get; set; }
 
         public int InitialNumberOfRawMessages { get; set; }
     }

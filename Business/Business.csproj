@@ -11,6 +11,9 @@
     <Folder Include="Repositories\" />
   </ItemGroup>
   <ItemGroup>
+    <Reference Include="Microsoft.Extensions.DependencyInjection.Abstractions">
+      <HintPath>..\..\..\..\Users\David\.nuget\packages\microsoft.extensions.dependencyinjection.abstractions\1.1.0\lib\netstandard1.0\Microsoft.Extensions.DependencyInjection.Abstractions.dll</HintPath>
+    </Reference>
     <Reference Include="Microsoft.Extensions.Options">
       <HintPath>..\..\..\..\Users\David\.nuget\packages\microsoft.extensions.options\1.1.0\lib\netstandard1.0\Microsoft.Extensions.Options.dll</HintPath>
     </Reference>

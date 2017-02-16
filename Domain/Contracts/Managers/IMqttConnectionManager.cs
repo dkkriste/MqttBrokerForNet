@@ -6,6 +6,8 @@
 
     public interface IMqttConnectionManager
     {
+        int AssignedClients { get; }
+
         void EnqueueRawMessageForProcessing(MqttRawMessage rawMessage);
 
         void EnqueueClientConnectionWithInternalEventQueueToProcess(MqttConnection connection);

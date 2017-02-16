@@ -6,8 +6,10 @@
     using System.Text;
     using System.Threading.Tasks;
 
+    using MqttBrokerForNet.Business.Network;
     using MqttBrokerForNet.Domain.Contracts.Handlers;
     using MqttBrokerForNet.Domain.Contracts.Managers;
+    using MqttBrokerForNet.Domain.Contracts.Network;
     using MqttBrokerForNet.Domain.Entities;
     using MqttBrokerForNet.Domain.Entities.Enums;
     using MqttBrokerForNet.Domain.Events;
@@ -37,11 +39,15 @@
 
         private readonly IMqttRetainedMessageManager retainedMessageManager;
 
+        private readonly IMqttTcpReceiver mqttTcpReceiver;
+
         private readonly BlockingCollection<InflightQueueProcessEvent> connectionsWithInflightQueuesToProcess;
 
         private readonly BlockingCollection<MqttConnection> connectionsWithInternalEventQueuesToProcess;
 
         private readonly BlockingCollection<MqttRawMessage> rawMessageQueue;
+
+        private volatile int numberOfConnections;
 
         #endregion
 
@@ -55,7 +61,8 @@
             IMqttPublishingManager publishingManager,
             IMqttSecurityManager securityManager,
             IMqttConnectionPoolManager connectionPoolManager,
-            IMqttRetainedMessageManager retainedMessageManager)
+            IMqttRetainedMessageManager retainedMessageManager,
+            IMqttTcpReceiver mqttTcpReceiver)
         {
             this.connectionInflightHandler = connectionInflightHandler;
             this.connectionInternalEventHandler = connectionInternalEventHandler;
@@ -67,10 +74,15 @@
             this.securityManager = securityManager;
             this.connectionPoolManager = connectionPoolManager;
             this.retainedMessageManager = retainedMessageManager;
+            this.mqttTcpReceiver = mqttTcpReceiver;
             rawMessageQueue = new BlockingCollection<MqttRawMessage>();
             connectionsWithInflightQueuesToProcess = new BlockingCollection<InflightQueueProcessEvent>();
             connectionsWithInternalEventQueuesToProcess = new BlockingCollection<MqttConnection>();
+            numberOfConnections = 0;
+            Console.WriteLine("ConnectionManagerCreated");
         }
+
+        public int AssignedClients => numberOfConnections;
 
         #region Public Methods and Operators
 
@@ -106,7 +118,6 @@
             var clientConnection = connectionsWithInternalEventQueuesToProcess.Take();
             connectionInternalEventHandler.ProcessInternalEventQueue(clientConnection);
         }
-
 
         public void OnConnectionClosed(MqttConnection connection)
         {
@@ -300,10 +311,10 @@
         public void OpenClientConnection(MqttConnection connection)
         {
             connection.IsRunning = true;
-
-            // connection.ConnectionManager = this;
-            //tcpReceiver.StartReceive(connection.ReceiveSocketAsyncEventArgs);
+            connection.ConnectionManager = this;
+            mqttTcpReceiver.StartReceive(connection.ReceiveSocketAsyncEventArgs);
             Task.Factory.StartNew(() => CheckForClientTimeout(connection));
+            numberOfConnections++;
         }
 
 
@@ -348,8 +359,8 @@
         {
             // stop receiving thread
             connection.IsRunning = false;
-
             connection.IsConnected = false;
+            numberOfConnections--;
         }
 
         /// <summary>
@@ -395,6 +406,5 @@
         }
 
         #endregion
-
     }
 }

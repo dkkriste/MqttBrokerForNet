@@ -9,7 +9,6 @@ namespace MqttBrokerForNet.Business.Network
 
     using MqttBrokerForNet.Domain.Contracts.Managers;
     using MqttBrokerForNet.Domain.Contracts.Network;
-    using MqttBrokerForNet.Domain.Entities;
 
     // Inspired by http://www.codeproject.com/Articles/83102/C-SocketAsyncEventArgs-High-Performance-Socket-Cod
     public class MqttAsyncTcpSocketListener : IMqttAsyncTcpSocketListener
@@ -18,7 +17,7 @@ namespace MqttBrokerForNet.Business.Network
 
         private readonly IMqttLoadbalancingManager loadbalancingManager;
 
-        private readonly IMqttConnectionPoolManager connectionManager;
+        private readonly IMqttConnectionPoolManager connectionPoolManager;
 
         private readonly Socket listenSocket;
 
@@ -33,11 +32,11 @@ namespace MqttBrokerForNet.Business.Network
 
         public MqttAsyncTcpSocketListener(
             IMqttLoadbalancingManager loadbalancingManager,
-            IMqttConnectionPoolManager connectionManager,
+            IMqttConnectionPoolManager connectionPoolManager,
             IOptions<MqttNetworkOptions> networkOptions)
         {
             this.loadbalancingManager = loadbalancingManager;
-            this.connectionManager = connectionManager;
+            this.connectionPoolManager = connectionPoolManager;
             poolOfAcceptEventArgs = new ConcurrentStack<SocketAsyncEventArgs>();
 
             for (var i = 0; i < networkOptions.Value.NumberOfAcceptSaea; i++)
@@ -109,7 +108,7 @@ namespace MqttBrokerForNet.Business.Network
 
             StartAccept();
 
-            var clientConnection = connectionManager.GetConnection();
+            var clientConnection = connectionPoolManager.GetConnection();
             if (clientConnection != null)
             {
                 clientConnection.ReceiveSocketAsyncEventArgs.AcceptSocket = acceptEventArgs.AcceptSocket;

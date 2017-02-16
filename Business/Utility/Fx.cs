@@ -17,6 +17,7 @@ Contributors:
 
 namespace MqttBrokerForNet.Business.Utility
 {
+    using System;
     using System.Threading;
 
     /// <summary>
